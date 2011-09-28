@@ -25,9 +25,10 @@ $File::Zglob::DEBUG = $ENV{DEBUG} ? 1 : 0;
 {
     my $guard = Cwd::Guard->new('t/dat/');
     is_deeply2('**/normalfile', ['very/deep/normalfile']);
-    is_deeply2('**/*', [qw(bug bug/0 very very/deep very/deep/normalfile)]);
+    is_deeply2('very/**/*', [qw(very/deep very/deep/normalfile)]);
     is_deeply2('very/deep/*', ['very/deep/normalfile'], "don't match dotfile");
     is_deeply2('very/deep/.*', ['very/deep/.dotfile'], "dotfile");
+    is_deeply2('**/*.{pm,pl}', [qw(lib/bar.pl lib/foo.pm)], "dotfile");
     is_deeply2('bug/0', ['bug/0']);
 }
 is_deeply2('*/*.t', [qw(t/00_compile.t  t/01_glob_expand_braces.t  t/02_glob_prepare_pattern.t  t/03_zglob.t  xt/01_podspell.t  xt/02_perlcritic.t  xt/03_pod.t  xt/04_minimum_version.t)]);

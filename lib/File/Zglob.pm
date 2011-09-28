@@ -23,7 +23,7 @@ our $STRICT_WILDCARD_SLASH = 1;
 sub zglob {
     my ($pattern) = @_;
     $pattern =~ s!^(\~[^$SEPCHAR]*)![glob($1)]->[0]!e; # support ~tokuhirom/
-    return zglob_fold($pattern, \&cons, []);
+    return @{glob_fold_1($pattern, [])};
 }
 
 sub dbg(@) {
@@ -50,19 +50,10 @@ sub dbg(@) {
     print($msg);
 }
 
-sub zglob_fold {
-    my ($patterns, $proc, $seed) = @_;
-    my @ret;
-    for my $pattern (glob_expand_braces($patterns)) {
-        push @ret, @{glob_fold_1($pattern, $proc, $seed)};
-    }
-    return @ret;
-}
-
 sub cons { [$_[0], @{$_[1]}] }
 
 sub glob_fold_1 {
-    my ($pattern, $proc, $seed) = @_;
+    my ($pattern, $seed) = @_;
     #dbg("FOLDING: $pattern");
     my ($rec, $recstar);
     $recstar = subname('recstar', sub {
@@ -89,7 +80,7 @@ sub glob_fold_1 {
         } elsif (@rest == 0) {
             #dbg("file name");
             # (folder proc seed node (car matcher) #f)
-            return glob_fs_fold($proc, $seed, $node, $current, 0);
+            return glob_fs_fold(\&cons, $seed, $node, $current, 0);
         } else {
             #dbg "NORMAL MATCH";
             return glob_fs_fold(sub {
