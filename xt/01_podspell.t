@@ -50,3 +50,6 @@ org
 CSS
 Amon
 UNIX-ish
+fileutil.scm
+gauche's
+scm
