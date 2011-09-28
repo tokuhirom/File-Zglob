@@ -7,21 +7,23 @@ use base qw(Exporter);
 
 our @EXPORT = qw(zglob);
 
-use Text::Glob qw(glob_to_regex);
 use File::Basename;
 
 sub subname { $_[1] }
 # use Sub::Name qw(subname);
 
 our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
+our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
 our $DEBUG = 0;
 our $FOLDER;
+our $STRICT_LEADING_DOT    = 1;
+our $STRICT_WILDCARD_SLASH = 1;
 
 sub zglob {
     my ($pattern) = @_;
-    $pattern =~ s!^\~![glob("~")]->[0]!e;
+    $pattern =~ s!^(\~[^$SEPCHAR]*)![glob($1)]->[0]!e; # support ~tokuhirom/
     return zglob_fold($pattern, \&cons, []);
 }
 
@@ -217,6 +219,70 @@ sub glob_expand_braces {
     }
 }
 
+sub glob_to_regex {
+    my $glob = shift;
+    my $regex = glob_to_regex_string($glob);
+    return $NOCASE ? qr/^$regex$/i : qr/^$regex$/;
+}
+
+sub glob_to_regex_string {
+    my $glob = shift;
+    my ($regex, $in_curlies, $escaping);
+    local $_;
+    my $first_byte = 1;
+    for ($glob =~ m/(.)/gs) {
+        if ($first_byte) {
+            if ($STRICT_LEADING_DOT) {
+                $regex .= '(?=[^\.])' unless $_ eq '.';
+            }
+            $first_byte = 0;
+        }
+        if ($_ eq '/') {
+            $first_byte = 1;
+        }
+        if ($_ eq '.' || $_ eq '(' || $_ eq ')' || $_ eq '|' ||
+            $_ eq '+' || $_ eq '^' || $_ eq '$' || $_ eq '@' || $_ eq '%' ) {
+            $regex .= "\\$_";
+        }
+        elsif ($_ eq '*') {
+            $regex .= $escaping ? "\\*" :
+              $STRICT_WILDCARD_SLASH ? "[^/]*" : ".*";
+        }
+        elsif ($_ eq '?') {
+            $regex .= $escaping ? "\\?" :
+              $STRICT_WILDCARD_SLASH ? "[^/]" : ".";
+        }
+        elsif ($_ eq '{') {
+            $regex .= $escaping ? "\\{" : "(";
+            ++$in_curlies unless $escaping;
+        }
+        elsif ($_ eq '}' && $in_curlies) {
+            $regex .= $escaping ? "}" : ")";
+            --$in_curlies unless $escaping;
+        }
+        elsif ($_ eq ',' && $in_curlies) {
+            $regex .= $escaping ? "," : "|";
+        }
+        elsif ($_ eq "\\") {
+            if ($escaping) {
+                $regex .= "\\\\";
+                $escaping = 0;
+            }
+            else {
+                $escaping = 1;
+            }
+            next;
+        }
+        else {
+            $regex .= $_;
+            $escaping = 0;
+        }
+        $escaping = 0;
+    }
+
+    return $regex;
+}
+
 1;
 __END__
 
@@ -313,6 +379,8 @@ Tokuhiro Matsuno E<lt>tokuhirom AAJKLFJEF GMAIL COME<gt>
 =head1 THANKS TO
 
 Most code was translated from gauche's fileutil.scm.
+
+glob_to_regex function is taken from L<Text::Glob>.
 
 =head1 SEE ALSO
 
