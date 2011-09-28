@@ -230,22 +230,81 @@ File::Zglob - Extended globs.
 
     use File::Zglob;
 
-    my @files = zglob('**/*.pm');
+    my @files = zglob('**/*.{pm,pl}');
 
 =head1 DESCRIPTION
 
 B<WARNINGS: THIS IS ALPHA VERSION. API MAY CHANGE WITHOUT NOTICE>
 
-File::Zglob is extended glob. It supports C<< **/*.pm >> form.
+Provides a traditional Unix glob(3) functionality; returns a list of pathnames that matches the given pattern.
+
+File::Zglob provides extended glob. It supports C<< **/*.pm >> form.
+
+=head1 FUNCTIONS
+
+=over 4
+
+=item zglob($pattern) # => list of matched files
+
+    my @files = zglob('**/*.[ch]');
+
+Unlike shell’s glob, if there’s no matching pathnames, () is returned.
+
+=back
+
+=head1 Special chars
+
+A glob pattern also consists of components and separator characters. In a component, following characters/syntax have special meanings.
+
+=over 4
+
+=item C<<*>>
+
+When it appears at the beginning of a component, it matches zero or more characters except a period (.). And it won’t match if the component of the input string begins with a period.
+
+Otherwise, it matches zero or more sequence of any characters.
+
+=item C<<**>>
+
+If a component is just **, it matches zero or more number of components that match *. For example, src/**/*.h matches all of the following patterns.
+
+    src/*.h
+    src/*/*.h
+    src/*/*/*.h
+    src/*/*/*/*.h
+    ...
+
+=item ?
+
+When it appears at the beginning of a component, it matches a character except a period (.). Otherwise, it matches any single character.
+
+=item [chars]
+
+Specifies a character set. Matches any one of the set. The syntax of chars is the same as perl’s character set syntax. 
+
+=item {pm,pl}
+
+There is alternation.
+
+"example.{foo,bar,baz}" matches "example.foo", "example.bar", and "example.baz"
+
+=back
 
 =head1 zglob and deep recursion
 
 C<< **/* >> form makes deep recursion by soft link. zglob throw exception if it's deep recursion.
 
+=head1 PORTABILITY
+
+I don't tested this module on Win32 environment. If you want to write a patch, please send me a github pull-req.
+
 =head1 LIMITATIONS
 
-    - Only support UNIX-ish systems.
-    - File order is not compatible with shells.
+=over 4
+
+=item File order is not compatible with shells.
+
+=back
 
 =head1 AUTHOR
 

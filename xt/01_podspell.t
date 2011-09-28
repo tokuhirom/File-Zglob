@@ -53,3 +53,9 @@ UNIX-ish
 fileutil.scm
 gauche's
 scm
+baz
+foo
+bar
+pull-req
+github
+zglob
