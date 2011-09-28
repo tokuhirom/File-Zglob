@@ -1,5 +1,7 @@
 .gitignore
+author/benchmark.pl
 Changes
+fileutil.scm
 inc/Module/Install.pm
 inc/Module/Install/AuthorTests.pm
 inc/Module/Install/Base.pm
@@ -17,6 +19,11 @@ MYMETA.json
 MYMETA.yml
 README
 t/00_compile.t
+t/01_glob_expand_braces.t
+t/02_glob_prepare_pattern.t
+t/03_zglob.t
+t/dat/very/deep/.dotfile
+t/dat/very/deep/normalfile
 xt/01_podspell.t
 xt/02_perlcritic.t
 xt/03_pod.t

@@ -234,6 +234,8 @@ File::Zglob - Extended globs.
 
 =head1 DESCRIPTION
 
+B<WARNINGS: THIS IS ALPHA VERSION. API MAY CHANGE WITHOUT NOTICE>
+
 File::Zglob is extended glob. It supports C<< **/*.pm >> form.
 
 =head1 LIMITATIONS
