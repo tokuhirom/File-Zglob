@@ -1,4 +1,5 @@
 .gitignore
+.proverc
 author/benchmark.pl
 Changes
 fileutil.scm
@@ -21,6 +22,8 @@ t/01_glob_expand_braces.t
 t/02_glob_prepare_pattern.t
 t/03_zglob.t
 t/dat/bug/0
+t/dat/lib/bar.pl
+t/dat/lib/foo.pm
 t/dat/very/deep/.dotfile
 t/dat/very/deep/normalfile
 xt/01_podspell.t
