@@ -10,6 +10,7 @@ our @EXPORT = qw(zglob);
 use File::Basename;
 
 our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
+our $SEPPATTERN = $^O eq 'MSWin32' ? '[\\/]' : '/';
 our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
@@ -20,7 +21,13 @@ our $STRICT_WILDCARD_SLASH = 1;
 sub zglob {
     my ($pattern) = @_;
     #dbg("FOLDING: $pattern");
-    $pattern =~ s!^(\~[^$SEPCHAR]*)![glob($1)]->[0]!e; # support ~tokuhirom/
+    # support ~tokuhirom/
+    if ($^O eq 'MSWin32') {
+        require Win32;
+        $pattern =~ s!^(\~[^$SEPCHAR]*)!Win32::GetLongPathName([glob($1)]->[0])!e;
+    } else {
+        $pattern =~ s!^(\~[^$SEPCHAR]*)![glob($1)]->[0]!e;
+    }
     my ($node, $matcher) = glob_prepare_pattern($pattern);
     #dbg("pattern: ", $node, $matcher);
     return _rec($node, $matcher, []);
@@ -99,12 +106,17 @@ sub glob_fs_fold {
             } else {
                 die "FATAL";
             }
-        } else {
+        } elsif ($node !~ m{/$}) {
             $node . '/';
+        } else {
+            $node;
         }
     };
     #dbg("prefix: $prefix");
     #dbg("regxp: ", $regexp);
+    if ($^O eq 'MSWin32' && ref $regexp eq 'SCALAR' && $$regexp =~ /^[a-zA-Z]\:$/) {
+        return _rec($$regexp . '/', $rest);
+    }
     if (ref $regexp eq 'SCALAR' && $regexp == $DIRFLAG) {
         if ($rest) {
             return _rec($prefix, $rest);
@@ -157,11 +169,14 @@ sub glob_fs_fold {
 
 sub glob_prepare_pattern {
     my ($pattern) = @_;
-    my @path = split $SEPCHAR, $pattern;
+    my @path = split $SEPPATTERN, $pattern;
 
     my $is_absolute = $path[0] eq '' ? 1 : 0;
     if ($is_absolute) {
         shift @path;
+    }
+    if ($^O eq 'MSWin32' && $path[0] =~ /^[a-zA-Z]\:$/) {
+        $is_absolute = 1;
     }
 
     @path = map {
@@ -169,6 +184,8 @@ sub glob_prepare_pattern {
             $DEEPFLAG
         } elsif ($_ eq '') {
             $DIRFLAG
+        } elsif ($^O eq 'MSWin32' && $_ =~ '^[a-zA-Z]\:$') {
+            \$_
         } else {
             glob_to_regex($_) # TODO: replace with original implementation?
         }
