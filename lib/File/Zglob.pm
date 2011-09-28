@@ -228,11 +228,13 @@ __END__
 
 =head1 NAME
 
-File::Zglob -
+File::Zglob - Extended globs.
 
 =head1 SYNOPSIS
 
-  use File::Zglob;
+    use File::Zglob;
+
+    my @files = zglob('**/*.pm');
 
 =head1 DESCRIPTION
 
@@ -240,16 +242,20 @@ File::Zglob is extended glob. It supports C<< **/*.pm >> form.
 
 =head1 LIMITATIONS
 
-- Only support UNIX-ish systems.
-- File order is not compatible with shells.
+    - Only support UNIX-ish systems.
+    - File order is not compatible with shells.
 
 =head1 AUTHOR
 
 Tokuhiro Matsuno E<lt>tokuhirom AAJKLFJEF GMAIL COME<gt>
 
+=head1 THANKS TO
+
+Most code was translated from gauche's fileutil.scm.
+
 =head1 SEE ALSO
 
-L<File::DosGlob>, L<Text::Glob>
+L<File::DosGlob>, L<Text::Glob>, gauche's fileutil.scm
 
 =head1 LICENSE
 
