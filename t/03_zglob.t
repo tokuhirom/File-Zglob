@@ -36,12 +36,12 @@ is_deeply2('lib/File/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/*/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/File/*.pm', ['lib/File/Zglob.pm']);
 is_deeply2('l*/*/*.pm', ['lib/File/Zglob.pm']);
-is_deeply2('~', [glob('~')]);
+is_samepath('~', [glob('~')]);
 if (-f glob('~/.bashrc')) {
-    is_deeply2('~/.bashrc', [glob('~/.bashrc')]);
+    is_samepath('~/.bashrc', [glob('~/.bashrc')]);
 }
 if (-f '/etc/passwd') {
-    is_deeply2('/etc/passwd', ['/etc/passwd']);
+    is_samepath('/etc/passwd', ['/etc/passwd']);
 }
 if ($ENV{USER} && $ENV{HOME} eq "/home/$ENV{USER}" && -d "/home/$ENV{USER}/") {
     is_deeply2("~", ["/home/$ENV{USER}"]);
@@ -60,4 +60,24 @@ sub is_deeply2 {
     is(Dumper([sort { $a cmp $b } zglob($pattern)]), Dumper([sort @$expected]), $reason || $pattern) or do {
         die "ABORT" if $File::Zglob::DEBUG;
     };
+}
+
+sub normalize {
+    my $path = shift;
+    if ($^O eq 'MSWin32') {
+        require Win32;
+        Win32::GetLongPathName(Cwd::abs_path($path))
+    } else {
+        Cwd::abs_path($path)
+    }
+
+}
+sub is_samepath {
+    my ($p, $b) = @_;
+
+    my $a = [zglob($p)];
+    return 0 if !defined($a) || !defined($b) || @$a != @$b;
+    for (0..$#$a) {
+        is(normalize($a->[$_]), normalize($b->[$_]));
+    }
 }
