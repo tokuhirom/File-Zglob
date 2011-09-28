@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use 5.008008;
 our $VERSION = '0.01';
-use parent qw(Exporter);
+use base qw(Exporter);
 
 our @EXPORT = qw(zglob);
 
