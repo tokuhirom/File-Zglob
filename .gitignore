@@ -14,3 +14,4 @@ blib/
 META.yml
 MYMETA.*
 fileutil.scm
+nytprof.out

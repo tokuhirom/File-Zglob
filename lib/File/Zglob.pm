@@ -10,19 +10,18 @@ our @EXPORT = qw(zglob);
 use Text::Glob qw(glob_to_regex);
 use File::Basename;
 
-*subname = eval "use Sub::Name; 1;" ? *Sub::Name::subname : sub { $_[1] };
+sub subname { $_[1] }
+# use Sub::Name qw(subname);
 
 our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
 our $DEBUG = 0;
+our $FOLDER;
 
 sub zglob {
-    my ($pattern, $folder) = @_;
-    return zglob_fold($pattern, sub {
-        my ($node, $seed) = @_;
-        [$node, @$seed];
-    }, [], $folder);
+    my ($pattern) = @_;
+    return zglob_fold($pattern, \&cons, []);
 }
 
 sub dbg(@) {
@@ -50,31 +49,27 @@ sub dbg(@) {
 }
 
 sub zglob_fold {
-    my ($patterns, $proc, $seed, $folder) = @_;
+    my ($patterns, $proc, $seed) = @_;
     my @ret;
     for my $pattern (glob_expand_braces($patterns)) {
-        push @ret, @{glob_fold_1($pattern, $proc, $seed, $folder)};
+        push @ret, @{glob_fold_1($pattern, $proc, $seed)};
     }
     return @ret;
 }
 
-sub cdr {
-    my $x = shift;
-    my ($first, @more) = @$x;
-    return \@more;
-}
+sub cons { [$_[0], @{$_[1]}] }
 
 sub glob_fold_1 {
-    my ($pattern, $proc, $seed, $folder) = @_;
-    dbg("FOLDING: $pattern");
-    $folder ||= make_glob_fs_fold();
+    my ($pattern, $proc, $seed) = @_;
+    #dbg("FOLDING: $pattern");
+    $FOLDER ||= make_glob_fs_fold();
     my ($rec, $recstar);
     $recstar = subname('recstar', sub {
         my ($node, $matcher, $seed) = @_;
-        dbg("recstar: ", $node, $matcher, $seed);
-        my $dat = $folder->(sub { [$_[0], @{$_[1]}] }, [], $node, qr{^[^.].*$}, \1);
+        #dbg("recstar: ", $node, $matcher, $seed);
+        my $dat = $FOLDER->(\&cons, [], $node, qr{^[^.].*$}, 1);
         my $foo = $rec->($node, $matcher, $seed);
-        dbg("recstar:: dat: ", $dat, " foo: ", $foo);
+        #dbg("recstar:: dat: ", $dat, " foo: ", $foo);
         for my $thing (@$dat) {
             $foo = $recstar->($thing, $matcher, $foo);
         }
@@ -82,29 +77,29 @@ sub glob_fold_1 {
     });
     $rec = subname('rec' => sub {
         my ($node, $matcher, $seed) = @_;
-        dbg($node, $matcher, $seed);
-        my $current = $matcher->[0];
+        #dbg($node, $matcher, $seed);
+        my ($current, @rest) = @{$matcher};
         if (!defined $current) {
-            dbg("FINISHED");
+            #dbg("FINISHED");
             return $seed;
         } elsif (ref($current) eq 'SCALAR' && $current == $DEEPFLAG) {
-            dbg("** mode");
-            return $recstar->($node, cdr($matcher), $seed);
-        } elsif (@{cdr($matcher)}==0) {
-            dbg("file name");
+            #dbg("** mode");
+            return $recstar->($node, \@rest, $seed);
+        } elsif (@rest == 0) {
+            #dbg("file name");
             # (folder proc seed node (car matcher) #f)
-            return $folder->($proc, $seed, $node, $current, 0);
+            return $FOLDER->($proc, $seed, $node, $current, 0);
         } else {
-            dbg "NORMAL MATCH";
-            return $folder->(sub {
-                my ($node, $seed) = @_;
-                dbg("NEXT: ", $node, cdr($matcher));
-                return $rec->($node, cdr($matcher), $seed);
+            #dbg "NORMAL MATCH";
+            return $FOLDER->(sub {
+                # my ($node, $seed) = @_;
+                #dbg("NEXT: ", $node, \@rest);
+                return $rec->($_[0], \@rest, $_[1]);
             }, $seed, $node, $current, 1);
         }
     });
     my ($node, $matcher) = glob_prepare_pattern($pattern);
-    dbg("pattern: ", $node, $matcher);
+    #dbg("pattern: ", $node, $matcher);
     return $rec->($node, $matcher, $seed);
 }
 
@@ -142,8 +137,8 @@ sub make_glob_fs_fold {
                 $node . '/';
             }
         };
-        dbg("prefix: $prefix");
-        dbg("regxp: ", $regexp);
+        #dbg("prefix: $prefix");
+        #dbg("regxp: ", $regexp);
         if (ref $regexp eq 'SCALAR' && $regexp == $DIRFLAG) {
             $proc->($prefix, $seed);
         } elsif (my $string_portion = fixed_regexp_p($regexp)) { # /^path$/
@@ -154,7 +149,7 @@ sub make_glob_fs_fold {
                 $proc;
             }
         } else { # normal regexp
-            dbg("normal regexp");
+            #dbg("normal regexp");
             my $dir = do {
                 if (ref($node) eq 'SCALAR' && $$node eq 1) {
                     $root_path || $SEPCHAR
@@ -164,20 +159,20 @@ sub make_glob_fs_fold {
                     $node;
                 }
             };
-            dbg("dir: $dir");
+            #dbg("dir: $dir");
             opendir my $dirh, $dir or do {
-                dbg("cannot open dir: $dir: $!");
+                #dbg("cannot open dir: $dir: $!");
                 return $seed;
             };
             while (my $child = readdir($dirh)) {
                 next if $child eq '.' or $child eq '..';
                 my $full;
-                dbg("non-leaf: ", $non_leaf_p);
+                #dbg("non-leaf: ", $non_leaf_p);
                 if (($child =~ $regexp) && ($full = $prefix . $child) && (!$non_leaf_p || -d $full)) {
-                    dbg("matched: ", $regexp, $child, $full);
+                    #dbg("matched: ", $regexp, $child, $full);
                     $seed = $proc->($full, $seed);
                 } else {
-                    dbg("Don't match: $child");
+                    #dbg("Don't match: $child");
                 }
             }
             return $seed;
