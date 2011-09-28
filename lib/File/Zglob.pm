@@ -1,6 +1,6 @@
 package File::Zglob;
 use strict;
-use warnings;
+use warnings FATAL => 'recursion';
 use 5.008008;
 our $VERSION = '0.01';
 use base qw(Exporter);
@@ -237,6 +237,10 @@ File::Zglob - Extended globs.
 B<WARNINGS: THIS IS ALPHA VERSION. API MAY CHANGE WITHOUT NOTICE>
 
 File::Zglob is extended glob. It supports C<< **/*.pm >> form.
+
+=head1 zglob and deep recursion
+
+C<< **/* >> form makes deep recursion by soft link. zglob throw exception if it's deep recursion.
 
 =head1 LIMITATIONS
 
