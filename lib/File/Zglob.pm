@@ -17,7 +17,6 @@ our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
 our $DEBUG = 0;
-our $FOLDER;
 our $STRICT_LEADING_DOT    = 1;
 our $STRICT_WILDCARD_SLASH = 1;
 
@@ -65,12 +64,11 @@ sub cons { [$_[0], @{$_[1]}] }
 sub glob_fold_1 {
     my ($pattern, $proc, $seed) = @_;
     #dbg("FOLDING: $pattern");
-    $FOLDER ||= make_glob_fs_fold();
     my ($rec, $recstar);
     $recstar = subname('recstar', sub {
         my ($node, $matcher, $seed) = @_;
         #dbg("recstar: ", $node, $matcher, $seed);
-        my $dat = $FOLDER->(\&cons, [], $node, qr{^[^.].*$}, 1);
+        my $dat = glob_fs_fold(\&cons, [], $node, qr{^[^.].*$}, 1);
         my $foo = $rec->($node, $matcher, $seed);
         #dbg("recstar:: dat: ", $dat, " foo: ", $foo);
         for my $thing (@$dat) {
@@ -91,10 +89,10 @@ sub glob_fold_1 {
         } elsif (@rest == 0) {
             #dbg("file name");
             # (folder proc seed node (car matcher) #f)
-            return $FOLDER->($proc, $seed, $node, $current, 0);
+            return glob_fs_fold($proc, $seed, $node, $current, 0);
         } else {
             #dbg "NORMAL MATCH";
-            return $FOLDER->(sub {
+            return glob_fs_fold(sub {
                 # my ($node, $seed) = @_;
                 #dbg("NEXT: ", $node, \@rest);
                 return $rec->($_[0], \@rest, $_[1]);
@@ -112,75 +110,62 @@ sub fixed_regexp_p {
     die "TBI"
 }
 
-sub make_glob_fs_fold {
-    my ($root_path, $current_path) = @_;
-    my $ensure_dirname = sub {
-        my $s = shift;
-        if (defined($s) && length($s) > 0 && $s =~ m{$SEPCHAR$}) {
-            $s .= $SEPCHAR;
-        }
-        return $s;
-    };
-    $root_path = $ensure_dirname->($root_path);
-    $current_path = $ensure_dirname->($current_path);
-    
-    # returns arrayref of seeds.
-    subname('folder' => sub {
-        my ($proc, $seed, $node, $regexp, $non_leaf_p) = @_;
-        my $prefix = do {
-            if (ref $node eq 'SCALAR') {
-                if ($$node eq 1) { #t
-                    $root_path || $SEPCHAR
-                } elsif ($$node eq '0') { #f
-                    $current_path || '';
-                } else {
-                    die "FATAL";
-                }
+# returns arrayref of seeds.
+sub glob_fs_fold {
+    my ($proc, $seed, $node, $regexp, $non_leaf_p) = @_;
+    my $prefix = do {
+        if (ref $node eq 'SCALAR') {
+            if ($$node eq 1) { #t
+                $SEPCHAR
+            } elsif ($$node eq '0') { #f
+                '';
             } else {
-                $node . '/';
+                die "FATAL";
+            }
+        } else {
+            $node . '/';
+        }
+    };
+    #dbg("prefix: $prefix");
+    #dbg("regxp: ", $regexp);
+    if (ref $regexp eq 'SCALAR' && $regexp == $DIRFLAG) {
+        $proc->($prefix, $seed);
+    } elsif (my $string_portion = fixed_regexp_p($regexp)) { # /^path$/
+        my $full = $prefix . $string_portion;
+        if (-e $full && (!$non_leaf_p || -d $full)) {
+            $proc->($full, $seed);
+        } else {
+            $proc;
+        }
+    } else { # normal regexp
+        #dbg("normal regexp");
+        my $dir = do {
+            if (ref($node) eq 'SCALAR' && $$node eq 1) {
+                $SEPCHAR
+            } elsif (ref($node) eq 'SCALAR' && $$node eq 0) {
+                '.';
+            } else {
+                $node;
             }
         };
-        #dbg("prefix: $prefix");
-        #dbg("regxp: ", $regexp);
-        if (ref $regexp eq 'SCALAR' && $regexp == $DIRFLAG) {
-            $proc->($prefix, $seed);
-        } elsif (my $string_portion = fixed_regexp_p($regexp)) { # /^path$/
-            my $full = $prefix . $string_portion;
-            if (-e $full && (!$non_leaf_p || -d $full)) {
-                $proc->($full, $seed);
-            } else {
-                $proc;
-            }
-        } else { # normal regexp
-            #dbg("normal regexp");
-            my $dir = do {
-                if (ref($node) eq 'SCALAR' && $$node eq 1) {
-                    $root_path || $SEPCHAR
-                } elsif (ref($node) eq 'SCALAR' && $$node eq 0) {
-                    $current_path || '.';
-                } else {
-                    $node;
-                }
-            };
-            #dbg("dir: $dir");
-            opendir my $dirh, $dir or do {
-                #dbg("cannot open dir: $dir: $!");
-                return $seed;
-            };
-            while (my $child = readdir($dirh)) {
-                next if $child eq '.' or $child eq '..';
-                my $full;
-                #dbg("non-leaf: ", $non_leaf_p);
-                if (($child =~ $regexp) && ($full = $prefix . $child) && (!$non_leaf_p || -d $full)) {
-                    #dbg("matched: ", $regexp, $child, $full);
-                    $seed = $proc->($full, $seed);
-                } else {
-                    #dbg("Don't match: $child");
-                }
-            }
+        #dbg("dir: $dir");
+        opendir my $dirh, $dir or do {
+            #dbg("cannot open dir: $dir: $!");
             return $seed;
+        };
+        while (my $child = readdir($dirh)) {
+            next if $child eq '.' or $child eq '..';
+            my $full;
+            #dbg("non-leaf: ", $non_leaf_p);
+            if (($child =~ $regexp) && ($full = $prefix . $child) && (!$non_leaf_p || -d $full)) {
+                #dbg("matched: ", $regexp, $child, $full);
+                $seed = $proc->($full, $seed);
+            } else {
+                #dbg("Don't match: $child");
+            }
         }
-    });
+        return $seed;
+    }
 }
 
 sub glob_prepare_pattern {
