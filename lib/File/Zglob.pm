@@ -194,20 +194,6 @@ sub glob_prepare_pattern {
     return ( \$is_absolute, \@path );
 }
 
-# TODO: better error detection?
-# TODO: nest support?
-sub glob_expand_braces {
-    my ($pattern, @more) = @_;
-    if (my ($prefix, $body, $suffix) = ($pattern =~ /^(.*)\{([^}]+)\}(.*)$/)) {
-        return (
-            ( map { glob_expand_braces("$prefix$_$suffix") } split /,/, $body ),
-            @more
-        );
-    } else {
-        return ($pattern, @more);
-    }
-}
-
 sub glob_to_regex {
     my $glob = shift;
     my $regex = glob_to_regex_string($glob);
