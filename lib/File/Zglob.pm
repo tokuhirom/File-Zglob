@@ -9,9 +9,6 @@ our @EXPORT = qw(zglob);
 
 use File::Basename;
 
-sub subname { $_[1] }
-# use Sub::Name qw(subname);
-
 our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
 our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
