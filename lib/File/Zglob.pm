@@ -9,8 +9,7 @@ our @EXPORT = qw(zglob);
 
 use File::Basename;
 
-our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
-our $SEPPATTERN = $^O eq 'MSWin32' ? '[\\/]' : '/';
+our $SEPCHAR    = '/';
 our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
@@ -169,7 +168,7 @@ sub glob_fs_fold {
 
 sub glob_prepare_pattern {
     my ($pattern) = @_;
-    my @path = split $SEPPATTERN, $pattern;
+    my @path = split $SEPCHAR, $pattern;
 
     my $is_absolute = $path[0] eq '' ? 1 : 0;
     if ($is_absolute) {
@@ -337,7 +336,13 @@ C<< **/* >> form makes deep recursion by soft link. zglob throw exception if it'
 
 =head1 PORTABILITY
 
-I don't tested this module on Win32 environment. If you want to write a patch, please send me a github pull-req.
+=over 4
+
+=item Win32
+
+Zglob supports Win32. zglob() only uses '/' as a path separator. Since zglob() accepts non-utf8 strings. CP932 contains '\' character as a second byte of multibyte chars.
+
+=back
 
 =head1 LIMITATIONS
 
