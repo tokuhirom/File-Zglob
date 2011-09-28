@@ -7,11 +7,10 @@ use parent qw(Exporter);
 
 our @EXPORT = qw(zglob);
 
-use autodie;
-use File::Find qw(find);
 use Text::Glob qw(glob_to_regex);
 use File::Basename;
-use Smart::Comments;
+
+*subname = eval "use Sub::Name; 1;" ? *Sub::Name::subname : sub { $_[1] };
 
 our $SEPCHAR = $^O eq 'Win32' ? '\\' : '/';
 our $DIRFLAG = \"DIR?";
@@ -26,16 +25,13 @@ sub zglob {
     }, [], $folder);
 }
 
-# see lib/gauche/fileutil.scm
-
-use Carp;
 sub dbg(@) {
     return unless $DEBUG;
+    my ($pkg, $filename, $line, $sub) = caller(1);
     my $i = 0;
     while (caller($i++)) { 1 }
-    my ($pkg, $filename, $line, $sub) = caller(0);
     my $msg;
-    $msg .= ('-' x $i);
+    $msg .= ('-' x ($i-5));
     $msg .= " [$sub] ";
     for (@_) {
         $msg .= ' ';
@@ -49,7 +45,8 @@ sub dbg(@) {
             $msg .= $_;
         }
     }
-    Carp::carp($msg);
+    $msg .= " at $filename line $line\n";
+    print($msg);
 }
 
 sub glob_fold {
@@ -66,27 +63,26 @@ sub cdr {
     my ($first, @more) = @$x;
     return \@more;
 }
-# (define (glob-fold patterns proc seed . opts)
-#   (fold (cut glob-fold-1 <> proc <> opts) seed
-#           (fold glob-expand-braces '()
-#               (if (list? patterns) patterns (list patterns)))))
 
 sub glob_fold_1 {
     my ($pattern, $proc, $seed, $folder) = @_;
     dbg("FOLDING: $pattern");
     $folder ||= make_glob_fs_fold();
-    my $recstar = sub {
+    my ($rec, $recstar);
+    $recstar = subname 'recstar', sub {
         my ($node, $matcher, $seed) = @_;
-#       my $dat = $folder->(sub { [$_[0], @{$_[1]}] }, [], $node, qr{^[^.].*$}, \1);
-#       $rec->($node, $matcher, $seed);
-        die "TBI";
-#   (define (rec* node matcher seed)
-#     (fold (cut rec* <> matcher <>)
-#           (rec node matcher seed)
-#           (folder cons '() node #/^[^.].*$/ #t)))
+        dbg("recstar: ", $node, $matcher, $seed);
+        my $dat = $folder->(sub { [$_[0], @{$_[1]}] }, [], $node, qr{^[^.].*$}, \1);
+        my $foo = $rec->($node, $matcher, $seed);
+        dbg("recstar:: dat: ", $dat, " foo: ", $foo);
+        for my $thing (@$dat) {
+            $foo = $recstar->($thing, $matcher, $foo);
+        }
+        return $foo;
     };
-    my $rec; $rec = sub {
+    $rec = subname 'rec' => sub {
         my ($node, $matcher, $seed) = @_;
+        dbg($node, $matcher, $seed);
         my $current = $matcher->[0];
         if (!defined $current) {
             dbg("FINISHED");
@@ -105,8 +101,6 @@ sub glob_fold_1 {
                 dbg("NEXT: ", $node, cdr($matcher));
                 return $rec->($node, cdr($matcher), $seed);
             }, $seed, $node, $current, 1);
-            # (folder (lambda (node seed) (rec node (cdr matcher) seed))
-            #                    seed node (car matcher) #t)
         }
     };
     my ($node, $matcher) = glob_prepare_pattern($pattern);
@@ -114,7 +108,7 @@ sub glob_fold_1 {
     return $rec->($node, $matcher, $seed);
 }
 
-# /^home$/ のような固定の文字列の場合に高速化をはかるための最適化なので、とりあえず undef をかえしておいても問題がない
+# /^home$/ のような固定の文字列の場合に高速化をはかるための最適化予定地なので、とりあえず undef をかえしておいても問題がない
 sub fixed_regexp_p {
     return undef;
     die "TBI"
@@ -133,7 +127,7 @@ sub make_glob_fs_fold {
     $current_path = $ensure_dirname->($current_path);
     
     # returns arrayref of seeds.
-    sub {
+    subname 'folder' => sub {
         my ($proc, $seed, $node, $regexp, $non_leaf_p) = @_;
         my $prefix = do {
             if (ref $node eq 'SCALAR') {
@@ -189,42 +183,6 @@ sub make_glob_fs_fold {
             return $seed;
         }
     };
-#   (define root-path/    (ensure-dirname root-path))
-#   (define current-path/ (ensure-dirname current-path))
-#   (lambda (proc seed node regexp non-leaf?)
-#     (let1 prefix (case node
-#                    [(#t) (or root-path/ separ)]
-#                    [(#f) (or current-path/ "")]
-#                    [else (string-append node separ)])
-#       ;; NB: we can't use filter, for it is not built-in.
-#       ;; also we can't use build-path from the same reason.
-#       ;; We treat fixed-regexp specially, since it allows
-#       ;; us not to search the directory---sometimes the directory
-#       ;; has 'x' permission but not 'r' permission, and it would be
-#       ;; unreasonable if we fail to go down the path even if we know
-#       ;; the exact name.
-#       (cond [(eq? regexp 'dir?) (proc prefix seed)]
-#             [(fixed-regexp? regexp)
-#              => (^s (let1 full (string-append prefix s)
-#                       (if (and (file-exists? full)
-#                                (or (not non-leaf?)
-#                                    (file-is-directory? full)))
-#                         (proc full seed)
-#                         seed)))]
-#             [else
-#              (fold (lambda (child seed)
-#                      (or (and-let* ([ (regexp child) ]
-#                                     [full (string-append prefix child)]
-#                                     [ (or (not non-leaf?)
-#                                           (file-is-directory? full)) ])
-#                            (proc full seed))
-#                          seed))
-#                    seed
-#                    (sys-readdir (case node
-#                                   [(#t) (or root-path/ "/")]
-#                                   [(#f) (or current-path/ ".")]
-#                                   [else node])))])))
-#   ))
 }
 
 sub glob_prepare_pattern {
@@ -278,11 +236,12 @@ File::Zglob -
 
 =head1 DESCRIPTION
 
-File::Zglob is
+File::Zglob is extended glob. It supports C<< **/*.pm >> form.
 
 =head1 LIMITATIONS
 
-Only support UNIX-ish systems.
+- Only support UNIX-ish systems.
+- File order is not compatible with shells.
 
 =head1 AUTHOR
 

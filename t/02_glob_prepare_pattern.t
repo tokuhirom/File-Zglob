@@ -8,9 +8,9 @@ use File::Zglob;
 
 subtest 'normal' => sub {
     my @patterns = (
-        '**/*' => [ 0, [ \"**", qr{^(?=[^\.])[^/]*$} ] ],
-        ".*" => [ 0, [qr{^\.[^/]*$}] ],
-        '/home' => [ 1, [qr{^(?=[^\.])home$}] ],
+        '**/*'  => [ \0, [ \"**", qr{^(?=[^\.])[^/]*$} ] ],
+        ".*"    => [ \0, [qr{^\.[^/]*$}] ],
+        '/home' => [ \1, [qr{^(?=[^\.])home$}] ],
     );
     for (my $i=0; $i<@patterns; $i+=2) {
         is_deeply([gpp($patterns[$i])], $patterns[$i+1], $patterns[$i]);

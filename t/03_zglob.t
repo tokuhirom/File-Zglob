@@ -5,15 +5,34 @@ use Test::More;
 use File::Zglob;
 use Data::Dumper;
 
+{
+    package Cwd::Guard;
+    sub new {
+        my ($class, $path) = @_;
+        my $cwd = Cwd::getcwd();
+        chdir($path);
+        bless \$cwd, $class;
+    }
+    sub DESTROY {
+        my $self = shift;
+        chdir($$self);
+    }
+}
+
 $File::Zglob::DEBUG = $ENV{DEBUG} ? 1 : 0;
 
+{
+    my $guard = Cwd::Guard->new('t/dat/');
+    is_deeply2('**/normalfile', ['very/deep/normalfile']);
+    is_deeply2('**/*', [qw(very very/deep very/deep/normalfile)]);
+    is_deeply2('very/deep/*', ['very/deep/normalfile'], "don't match dotfile");
+    is_deeply2('very/deep/.*', ['very/deep/.dotfile'], "dotfile");
+}
 is_deeply2('*/*.t', [qw(t/00_compile.t  t/01_glob_expand_braces.t  t/02_glob_prepare_pattern.t  t/03_zglob.t  xt/01_podspell.t  xt/02_perlcritic.t  xt/03_pod.t  xt/04_minimum_version.t)]);
 is_deeply2('lib/File/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/*/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/File/*.pm', ['lib/File/Zglob.pm']);
 is_deeply2('l*/*/*.pm', ['lib/File/Zglob.pm']);
-is_deeply2('t/dat/very/deep/*', ['t/dat/very/deep/normalfile'], "don't match dotfile");
-is_deeply2('t/dat/very/deep/.*', ['t/dat/very/deep/.dotfile'], "dotfile");
 if (-f '/etc/passwd') {
     is_deeply2('/etc/passwd', ['/etc/passwd']);
 }
