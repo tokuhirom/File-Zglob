@@ -57,12 +57,12 @@ sub _recstar {
     my ($node, $matcher, $seed) = @_;
     #dbg("recstar: ", $node, $matcher, $seed);
     my $dat = glob_fs_fold([], $node, qr{^[^.].*$}, 1);
-    my $foo = _rec($node, $matcher, $seed);
+    $seed = _rec($node, $matcher, $seed);
     #dbg("recstar:: dat: ", $dat, " foo: ", $foo);
     for my $thing (@$dat) {
-        $foo = _recstar($thing, $matcher, $foo);
+        $seed = _recstar($thing, $matcher, $seed);
     }
-    return $foo;
+    return $seed;
 }
 
 sub _rec {
