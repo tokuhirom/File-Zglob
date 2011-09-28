@@ -1,5 +1,10 @@
 Revision history for Perl extension File::Zglob
 
+0.06
+
+    - '0' is true value.
+    - optimization
+
 0.05
 
     - support ~foo/

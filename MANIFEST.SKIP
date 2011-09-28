@@ -27,3 +27,4 @@ perltidy.ERR$
 ^README.pod$
 ^tags$
 ^MYMETA.(.+)$
+^File-Zglob-
