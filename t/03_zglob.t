@@ -41,6 +41,10 @@ if (-f glob('~/.bashrc')) {
 if (-f '/etc/passwd') {
     is_deeply2('/etc/passwd', ['/etc/passwd']);
 }
+if ($ENV{USER} && $ENV{HOME} eq "/home/$ENV{USER}" && -d "/home/$ENV{USER}/") {
+    is_deeply2("~", ["/home/$ENV{USER}"]);
+    is_deeply2("~$ENV{USER}", ["/home/$ENV{USER}"]);
+}
 
 done_testing;
 
