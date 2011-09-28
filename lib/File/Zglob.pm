@@ -19,7 +19,7 @@ our $DEBUG = 0;
 
 sub zglob {
     my ($pattern, $folder) = @_;
-    return glob_fold($pattern, sub {
+    return zglob_fold($pattern, sub {
         my ($node, $seed) = @_;
         [$node, @$seed];
     }, [], $folder);
@@ -49,7 +49,7 @@ sub dbg(@) {
     print($msg);
 }
 
-sub glob_fold {
+sub zglob_fold {
     my ($patterns, $proc, $seed, $folder) = @_;
     my @ret;
     for my $pattern (glob_expand_braces($patterns)) {
