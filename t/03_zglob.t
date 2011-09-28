@@ -31,7 +31,7 @@ $File::Zglob::DEBUG = $ENV{DEBUG} ? 1 : 0;
     is_deeply2('**/*.{pm,pl}', [qw(lib/bar.pl lib/foo.pm)]);
     is_deeply2('bug/0', ['bug/0']);
 }
-is_deeply2('*/*.t', [qw(t/00_compile.t  t/01_glob_expand_braces.t  t/02_glob_prepare_pattern.t  t/03_zglob.t  xt/01_podspell.t  xt/02_perlcritic.t  xt/03_pod.t  xt/04_minimum_version.t)]);
+is_deeply2('*/*.t', [qw(t/00_compile.t   t/02_glob_prepare_pattern.t  t/03_zglob.t  xt/01_podspell.t  xt/02_perlcritic.t  xt/03_pod.t  xt/04_minimum_version.t)]);
 is_deeply2('lib/File/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/*/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/File/*.pm', ['lib/File/Zglob.pm']);
