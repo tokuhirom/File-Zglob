@@ -1,5 +1,9 @@
 Revision history for Perl extension File::Zglob
 
+0.03
+
+    - doc fix
+
 0.02
 
     - make deep recursion as fatal error
