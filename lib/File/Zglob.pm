@@ -153,7 +153,7 @@ sub glob_fs_fold {
             #dbg("cannot open dir: $dir: $!");
             return $seed;
         };
-        while (my $child = readdir($dirh)) {
+        while (defined(my $child = readdir($dirh))) {
             next if $child eq '.' or $child eq '..';
             my $full;
             #dbg("non-leaf: ", $non_leaf_p);
