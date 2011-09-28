@@ -69,7 +69,7 @@ sub glob_fold_1 {
     dbg("FOLDING: $pattern");
     $folder ||= make_glob_fs_fold();
     my ($rec, $recstar);
-    $recstar = subname 'recstar', sub {
+    $recstar = subname('recstar', sub {
         my ($node, $matcher, $seed) = @_;
         dbg("recstar: ", $node, $matcher, $seed);
         my $dat = $folder->(sub { [$_[0], @{$_[1]}] }, [], $node, qr{^[^.].*$}, \1);
@@ -79,8 +79,8 @@ sub glob_fold_1 {
             $foo = $recstar->($thing, $matcher, $foo);
         }
         return $foo;
-    };
-    $rec = subname 'rec' => sub {
+    });
+    $rec = subname('rec' => sub {
         my ($node, $matcher, $seed) = @_;
         dbg($node, $matcher, $seed);
         my $current = $matcher->[0];
@@ -102,7 +102,7 @@ sub glob_fold_1 {
                 return $rec->($node, cdr($matcher), $seed);
             }, $seed, $node, $current, 1);
         }
-    };
+    });
     my ($node, $matcher) = glob_prepare_pattern($pattern);
     dbg("pattern: ", $node, $matcher);
     return $rec->($node, $matcher, $seed);
@@ -127,7 +127,7 @@ sub make_glob_fs_fold {
     $current_path = $ensure_dirname->($current_path);
     
     # returns arrayref of seeds.
-    subname 'folder' => sub {
+    subname('folder' => sub {
         my ($proc, $seed, $node, $regexp, $non_leaf_p) = @_;
         my $prefix = do {
             if (ref $node eq 'SCALAR') {
@@ -182,7 +182,7 @@ sub make_glob_fs_fold {
             }
             return $seed;
         }
-    };
+    });
 }
 
 sub glob_prepare_pattern {

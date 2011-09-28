@@ -4,6 +4,7 @@ use utf8;
 use Test::More;
 use File::Zglob;
 use Data::Dumper;
+use Cwd;
 
 {
     package Cwd::Guard;
