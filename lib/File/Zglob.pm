@@ -21,6 +21,7 @@ our $FOLDER;
 
 sub zglob {
     my ($pattern) = @_;
+    $pattern =~ s!^\~![glob("~")]->[0]!e;
     return zglob_fold($pattern, \&cons, []);
 }
 

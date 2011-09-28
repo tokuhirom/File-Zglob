@@ -34,6 +34,10 @@ is_deeply2('lib/File/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/*/Zglob.pm', ['lib/File/Zglob.pm']);
 is_deeply2('lib/File/*.pm', ['lib/File/Zglob.pm']);
 is_deeply2('l*/*/*.pm', ['lib/File/Zglob.pm']);
+is_deeply2('~', [glob('~')]);
+if (-f glob('~/.bashrc')) {
+    is_deeply2('~/.bashrc', [glob('~/.bashrc')]);
+}
 if (-f '/etc/passwd') {
     is_deeply2('/etc/passwd', ['/etc/passwd']);
 }
