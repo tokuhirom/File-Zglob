@@ -8,8 +8,9 @@ use Benchmark qw(:all);
 use lib 'lib';
 use File::Zglob;
 use File::Glob qw(bsd_glob);
+use File::Find::Rule;
 
-my $t = timethese(50_000, {
+my $t = timethese(-1, {
     glob => sub {
         glob('*/*.t')
     },
@@ -18,6 +19,9 @@ my $t = timethese(50_000, {
     },
     bsd_glob => sub {
         bsd_glob('*/*.t')
+    },
+    rule => sub {
+        File::Find::Rule->file->name('*.t')->in('.')
     },
 });
 cmpthese($t);
