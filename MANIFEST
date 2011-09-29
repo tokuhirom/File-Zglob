@@ -18,7 +18,6 @@ MANIFEST			This list of files
 META.yml
 README
 t/00_compile.t
-t/01_glob_expand_braces.t
 t/02_glob_prepare_pattern.t
 t/03_zglob.t
 t/dat/bug/0

@@ -2,7 +2,7 @@ package File::Zglob;
 use strict;
 use warnings 'all', FATAL => 'recursion';
 use 5.008008;
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 use base qw(Exporter);
 
 our @EXPORT = qw(zglob);
