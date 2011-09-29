@@ -6,6 +6,8 @@ use File::Zglob;
 
 *gpp = *File::Zglob::glob_prepare_pattern;
 
+local $File::Zglob::NOCASE = 0; # case sensitive to pass tests.
+
 subtest 'normal' => sub {
     my @patterns = (
         '**/*'  => [ \0, [ \"**", qr{^(?=[^\.])[^/]*$} ] ],
