@@ -59,3 +59,5 @@ bar
 pull-req
 github
 zglob
+CP932
+utf-8
