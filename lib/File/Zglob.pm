@@ -183,6 +183,8 @@ sub glob_prepare_pattern {
             $DEEPFLAG
         } elsif ($_ eq '') {
             $DIRFLAG
+        } elsif ($_ eq '.') {
+            ()
         } elsif ($^O eq 'MSWin32' && $_ =~ '^[a-zA-Z]\:$') {
             \$_
         } else {
