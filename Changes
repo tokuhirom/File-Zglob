@@ -1,5 +1,9 @@
 Revision history for Perl extension File::Zglob
 
+0.09
+
+    - Support "." in path segments(cho45)
+
 0.08
 
     - win32 fix(mattn++)
