@@ -195,6 +195,7 @@ sub glob_prepare_pattern {
     return ( \$is_absolute, \@path );
 }
 
+# this is not a private function. '**' was handled at glob_prepare_pattern() function.
 sub glob_to_regex {
     my $glob = shift;
     my $regex = glob_to_regex_string($glob);
