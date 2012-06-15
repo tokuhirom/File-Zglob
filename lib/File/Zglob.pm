@@ -13,6 +13,7 @@ our $SEPCHAR    = '/';
 our $NOCASE = $^O =~ /^(?:MSWin32|VMS|os2|dos|riscos|MacOS|darwin)$/ ? 1 : 0;
 our $DIRFLAG = \"DIR?";
 our $DEEPFLAG = \"**";
+our $PARENTFLAG = \"**";
 our $DEBUG = 0;
 our $STRICT_LEADING_DOT    = 1;
 our $STRICT_WILDCARD_SLASH = 1;
@@ -28,6 +29,8 @@ sub zglob {
         $pattern =~ s!^(\~[^$SEPCHAR]*)![glob($1)]->[0]!e;
     }
     my ($node, $matcher) = glob_prepare_pattern($pattern);
+    # $node : \0 if absolute path, \1 if relative.
+
     #dbg("pattern: ", $node, $matcher);
     return _rec($node, $matcher, []);
 }
@@ -45,6 +48,7 @@ sub dbg(@) {
         if (not defined $_) {
             $msg .= '<<undef>>';
         } elsif (ref $_) {
+            require Data::Dumper;
             local $Data::Dumper::Terse = 1;
             local $Data::Dumper::Indent = 0;
             $msg .= Data::Dumper::Dumper($_);
@@ -70,6 +74,8 @@ sub _recstar {
 
 sub _rec {
     my ($node, $matcher) = @_;
+    # $matcher: ArrayRef[Any]
+
     my ($current, @rest) = @{$matcher};
     if (!defined $current) {
         #dbg("FINISHED");
@@ -77,6 +83,14 @@ sub _rec {
     } elsif (ref($current) eq 'SCALAR' && $current == $DEEPFLAG) {
         #dbg("** mode");
         return _recstar($node, \@rest);
+    } elsif (ref($current) eq 'SCALAR' && $current == $PARENTFLAG) {
+        if (ref($node) eq 'SCALAR' && $$node eq 1) { #t
+            die "You cannot get a parent directory of root dir.";
+        } elsif (ref($node) eq 'SCALAR' && $$node eq 0) { #f
+            return _rec("..", \@rest);
+        } else {
+            return _rec("$node$SEPCHAR..", \@rest);
+        }
     } elsif (@rest == 0) {
         #dbg("file name");
         # (folder proc seed node (car matcher) #f)
@@ -96,6 +110,7 @@ sub fixed_regexp_p {
 # returns arrayref of seeds.
 sub glob_fs_fold {
     my ($node, $regexp, $non_leaf_p, $rest) = @_;
+
     my $prefix = do {
         if (ref $node eq 'SCALAR') {
             if ($$node eq 1) { #t
@@ -111,8 +126,8 @@ sub glob_fs_fold {
             $node;
         }
     };
-    #dbg("prefix: $prefix");
-    #dbg("regxp: ", $regexp);
+    dbg("prefix: $prefix");
+    dbg("regxp: ", $regexp);
     if ($^O eq 'MSWin32' && ref $regexp eq 'SCALAR' && $$regexp =~ /^[a-zA-Z]\:$/) {
         return _rec($$regexp . '/', $rest);
     }
@@ -185,6 +200,8 @@ sub glob_prepare_pattern {
             $DIRFLAG
         } elsif ($_ eq '.') {
             ()
+        } elsif ($_ eq '..') {
+            $PARENTFLAG
         } elsif ($^O eq 'MSWin32' && $_ =~ '^[a-zA-Z]\:$') {
             \$_
         } else {

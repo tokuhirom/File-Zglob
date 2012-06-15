@@ -8,17 +8,18 @@ use File::Basename qw(dirname basename);
 
 local $File::Zglob::NOCASE = 0; # case sensitive to pass tests.
 
-my $this_dir   = dirname(__FILE__);
-my $parent_dir = dirname($this_dir);
 
-chdir $this_dir;
+{
+    chdir 't/';
+    my @abs = map { basename($_) } zglob("../lib/**/*.pm");
+    is_deeply \@abs, [qw(Zglob.pm)];
+    chdir '..';
+}
 
-my @abs = map { basename($_) } zglob($parent_dir . "/lib/**/*.pm");
-is_deeply \@abs, [qw(Zglob.pm)];
-
-is_deeply [map { basename($_) } zglob("$this_dir/../lib/**/*.pm")], \@abs;
-is_deeply [map { basename($_) } zglob(          "../lib/**/*.pm")], \@abs;
-
+{
+    my @abs = map { basename($_) } zglob("lib/../lib/**/*.pm");
+    is_deeply \@abs, [qw(Zglob.pm)];
+}
 
 done_testing;
 
