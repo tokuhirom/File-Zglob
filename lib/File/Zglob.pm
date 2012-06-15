@@ -308,7 +308,7 @@ File::Zglob provides extended glob. It supports C<< **/*.pm >> form.
 
     my @files = zglob('**/*.[ch]');
 
-Unlike shell’s glob, if there’s no matching pathnames, () is returned.
+Unlike shell's glob, if there's no matching pathnames, () is returned.
 
 =back
 
@@ -320,7 +320,7 @@ A glob pattern also consists of components and separator characters. In a compon
 
 =item C<< * >>
 
-When it appears at the beginning of a component, it matches zero or more characters except a period (.). And it won’t match if the component of the input string begins with a period.
+When it appears at the beginning of a component, it matches zero or more characters except a period (.). And it won't match if the component of the input string begins with a period.
 
 Otherwise, it matches zero or more sequence of any characters.
 
@@ -340,7 +340,7 @@ When it appears at the beginning of a component, it matches a character except a
 
 =item C<< [chars] >>
 
-Specifies a character set. Matches any one of the set. The syntax of chars is the same as perl’s character set syntax. 
+Specifies a character set. Matches any one of the set. The syntax of chars is the same as perl's character set syntax. 
 
 =item C<< {pm,pl} >>
 
