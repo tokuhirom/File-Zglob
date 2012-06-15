@@ -1,8 +1,8 @@
 .gitignore
 .proverc
 author/benchmark.pl
+author/test.pl
 Changes
-fileutil.scm
 inc/Module/Install.pm
 inc/Module/Install/AuthorTests.pm
 inc/Module/Install/Base.pm
@@ -20,6 +20,7 @@ README
 t/00_compile.t
 t/02_glob_prepare_pattern.t
 t/03_zglob.t
+t/04_dotdot.t
 t/dat/bug/0
 t/dat/lib/bar.pl
 t/dat/lib/foo.pm

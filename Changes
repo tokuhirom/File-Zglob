@@ -1,5 +1,9 @@
 Revision history for Perl extension File::Zglob
 
+0.10
+
+    - support '..' in path segments
+
 0.09
 
     - Support "." in path segments(cho45)
